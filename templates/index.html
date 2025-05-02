@@ -11,21 +11,21 @@
         <h1 class="text-center">過關派彩計算器</h1>
         <form method="POST" class="mt-4">
             <div class="mb-3">
-                <label class="form-label">選擇選項 (Select Items):</label>
+                <label class="form-label">選項 (Select Items):</label>
                 <table class="table table-bordered">
                     <thead>
                         <tr>
                             <th>比賽 (Match)</th>
-                            <th>選項 A <input type="checkbox" id="select-all-a" onchange="toggleColumn('a')"></th>
-                            <th>選項 B <input type="checkbox" id="select-all-b" onchange="toggleColumn('b')"></th>
-                            <th>選項 C <input type="checkbox" id="select-all-c" onchange="toggleColumn('c')"></th>
-                            <th>選項 D <input type="checkbox" id="select-all-d" onchange="toggleColumn('d')"></th>
+                            <th>第 1 注項/賠率 <input type="checkbox" id="select-all-a" onchange="toggleColumn('a')"></th>
+                            <th>第 2 注項/賠率<input type="checkbox" id="select-all-b" onchange="toggleColumn('b')"></th>
+                            <th>第 3 注項/賠率<input type="checkbox" id="select-all-c" onchange="toggleColumn('c')"></th>
+                            <th>第 4 注項/賠率<input type="checkbox" id="select-all-d" onchange="toggleColumn('d')"></th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for i in range(1, 7) %}
                             <tr>
-                                <td>比賽 {{ i }}</td>
+                                <td>第 {{ i }} 關</td>
                                 {% for c in ['a', 'b', 'c', 'd'] %}
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -104,7 +104,7 @@
             <button type="submit" class="btn btn-primary mt-3">計算派彩</button>
         </form>
     </div>
-    <div class="mt-4"><p  class="text-center"><strong>Created by Oscar & Karl</strong></p></div>
+    <div class="mt-4"><p  class="text-center"><strong>-Created by O&K-</strong></p></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function toggleOdds(checkbox) {
