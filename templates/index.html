@@ -53,46 +53,56 @@
                 <label for="stake" class="form-label">投注金額 (Stake):</label>
                 <input type="number" name="stake" id="stake" class="form-control" step="0.01" value="{{ stake }}" required>
             </div>
-            <button type="submit" class="btn btn-primary">計算派彩</button>
-        </form>
 
-        {% if error %}
-            <div class="alert alert-danger mt-3">{{ error }}</div>
-        {% endif %}
+            {% if error %}
+                <div class="alert alert-danger mt-3">{{ error }}</div>
+            {% endif %}
 
-        {% if result %}
-            <div class="mt-4">
-                <h3>計算結果</h3>
-                <p><strong>選擇的選項:</strong> {{ result.selected|join(', ') }}</p>
-                <p><strong>組合數量 (Combination Counts):</strong></p>
-                <ul>
-                    {% for k in range(1, min(result.selected|length + 1, 7)) if k in result.combination_counts %}
-                        <li>{{ k }}-leg: {{ result.combination_counts[k] }}</li>
-                    {% endfor %}
-                </ul>
-                <p><strong>總組合數:</strong> {{ result.total_combinations }}</p>
-                <p><strong>總派彩:</strong> HK${{ '{:,.2f}'.format(result.combinations|sum(attribute='payout')) }}</p>
-                <h4>組合與派彩總結 (Combinations and Payouts Summary):</h4>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>組合大小 (Size)</th>
-                            <th>組合數量 (Count)</th>
-                            <th>總派彩 (Total Payout)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for k in range(1, min(result.selected|length + 1, 7)) if k in result.combination_counts %}
-                            <tr>
-                                <td>{{ k }}-leg</td>
-                                <td>{{ result.combination_counts[k] }}</td>
-                                <td>HK${{ '{:,.2f}'.format(result.combinations|selectattr('size', 'equalto', k)|sum(attribute='payout')) }}</td>
-                            </tr>
+            {% if result %}
+                <div class="mt-4">
+                    <h3>計算結果</h3>
+                    <p><strong>選擇的選項:</strong> {{ result.selected|join(', ') }}</p>
+                    <p><strong>組合數量 (Combination Counts):</strong></p>
+                    <ul>
+                        {% for k in range(1, max_k + 1) if k in result.combination_counts %}
+                            <li>
+                                <div class="form-check">
+                                    <input type="checkbox" name="legs" value="{{ k }}"
+                                           id="leg_{{ k }}"
+                                           class="form-check-input"
+                                           {% if k in result.selected_legs %}checked{% endif %}>
+                                    <label for="leg_{{ k }}" class="form-check-label">{{ k }}-leg: {{ result.combination_counts[k] }}</label>
+                                </div>
+                            </li>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
+                    </ul>
+                    <p><strong>總組合數:</strong> {{ result.total_combinations }}</p>
+                    <p><strong>總派彩:</strong> HK${{ '{:,.2f}'.format(result.total_payout) }}</p>
+                    <button type="submit" class="btn btn-secondary mt-2">重新計算派彩</button>
+                    <h4>組合與派彩總結 (Combinations and Payouts Summary):</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>組合大小 (Size)</th>
+                                <th>組合數量 (Count)</th>
+                                <th>總派彩 (Total Payout)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for k in range(1, max_k + 1) if k in result.combination_counts %}
+                                <tr>
+                                    <td>{{ k }}-leg</td>
+                                    <td>{{ result.combination_counts[k] }}</td>
+                                    <td>HK${{ '{:,.2f}'.format(result.combinations|selectattr('size', 'equalto', k)|sum(attribute='payout')) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary mt-3">計算派彩</button>
+        </form>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>

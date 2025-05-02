@@ -21,6 +21,7 @@ def calculator():
     if request.method == 'POST':
         # Get user inputs
         selected_items = request.form.getlist('items')
+        selected_legs = [int(leg) for leg in request.form.getlist('legs') if leg]  # Get checked leg sizes
         stake = request.form.get('stake', session['stake'])
         try:
             stake = float(stake)
@@ -43,22 +44,25 @@ def calculator():
         if not selected_items:
             return render_template('index.html', items=items, error="Please select at least 1 item.", stake=session['stake'], odds=session['odds'])
 
-        # Generate combinations for 1 to n items, capped at 6
+        # Determine number of unique matches
+        match_numbers = set(int(item[0]) for item in selected_items)  # Extract unique match numbers
+        n = len(match_numbers)  # Number of unique matches
+        max_k = min(n, 6)  # Cap at n matches or 6
+
+        # Generate combinations for 1 to max_k items
         results = []
         combination_counts = {}
-        n = len(selected_items)
-        max_k = min(n, n//2)  # Cap at n or 6 #karl changed 6 to n//2
         for k in range(1, max_k + 1):
-            if k > n:  # Skip if k exceeds number of items
+            if k > n:
                 continue
             combos = list(itertools.combinations(selected_items, k))
-            if combos:  # Only include if there are valid combinations
+            if combos:
                 combination_counts[k] = len(combos)
                 for combo in combos:
                     parlay_odds = 1
                     for item in combo:
                         parlay_odds *= odds.get(item, 2.0)
-                    payout = stake * parlay_odds // 2 #karl added //2
+                    payout = stake * parlay_odds // 2  # Adjusted payout calculation
                     results.append({
                         'size': k,
                         'combo': ', '.join(combo),
@@ -66,18 +70,29 @@ def calculator():
                         'payout': payout  # Keep as float for summation
                     })
 
+        # If no legs are selected, default to all available legs
+        if not selected_legs:
+            selected_legs = list(combination_counts.keys())
+
         # Debug print to verify
         print(f"Selected items: {selected_items}")
+        print(f"Unique matches: {match_numbers}")
+        print(f"Selected legs: {selected_legs}")
         print(f"Combination counts: {combination_counts}")
         print(f"Results sizes: {[r['size'] for r in results]}")
+
+        # Calculate total payout based on selected legs
+        total_payout = sum(r['payout'] for r in results if r['size'] in selected_legs)
 
         result = {
             'selected': selected_items,
             'combinations': results,
             'combination_counts': combination_counts,
-            'total_combinations': sum(combination_counts.values())
+            'total_combinations': sum(combination_counts.values()),
+            'total_payout': total_payout,
+            'selected_legs': selected_legs
         }
-        return render_template('index.html', items=items, result=result, stake=session['stake'], odds=session['odds'])
+        return render_template('index.html', items=items, result=result, stake=session['stake'], odds=session['odds'], max_k=max_k)
 
     return render_template('index.html', items=items, stake=session['stake'], odds=session['odds'])
 
