@@ -40,7 +40,7 @@
                                             </div>
                                             <input type="number" name="odds_{{ i }}{{ c }}" id="odds_{{ i }}{{ c }}"
                                                 class="form-control form-control-sm odds-input"
-                                                step="0.01" value="{{ odds[i|string + c]|default('2.00', true) if result is defined and i|string + c in result.selected else '2.00' }}"
+                                                step="0.01" value="{{ odds[i|string + c]|string if result is defined and i|string + c in result.selected else '0.00' if odds[i|string + c] == 0 else '2.00' }}"
                                                 {% if result is defined and i|string + c not in result.selected %}disabled{% endif %}>
                                         </div>
                                     </td>
@@ -113,8 +113,9 @@
         function toggleOdds(checkbox) {
             const oddsInput = document.getElementById('odds_' + checkbox.value);
             oddsInput.disabled = !checkbox.checked;
+            // Do not reset to 2.00; preserve user input (including 0)
             if (checkbox.checked && !oddsInput.value) {
-                oddsInput.value = '2.00';
+                oddsInput.value = oddsInput.defaultValue || '0.00'; // Use defaultValue or 0.00
             }
         }
 

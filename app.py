@@ -31,11 +31,11 @@ def calculator():
             stake = session['stake']
         odds = {}
         for item in items:
-            odds_value = request.form.get(f'odds_{item}', session['odds'].get(item, 2.0))
+            odds_value = request.form.get(f'odds_{item}')
             try:
-                odds[item] = float(odds_value) if odds_value else 2.0
+                odds[item] = float(odds_value) if odds_value else session['odds'].get(item, 0.0)  # Preserve 0 if set
             except (ValueError, TypeError):
-                odds[item] = session['odds'].get(item, 2.0)
+                odds[item] = session['odds'].get(item, 0.0)  # Fall back to session value, default to 0.0
 
         # Update session
         session['stake'] = stake
@@ -65,7 +65,7 @@ def calculator():
                 for combo in combos:
                     parlay_odds = 1
                     for item in combo:
-                        parlay_odds *= odds.get(item, 2.0)
+                        parlay_odds *= odds.get(item, 0.0)  # Use 0.0 for non-winning races
                     payout = stake * parlay_odds // 2  # Adjusted payout calculation
                     results.append({
                         'size': k,
@@ -89,6 +89,7 @@ def calculator():
         print(f"Session selected_legs: {session['selected_legs']}")
         print(f"Combination counts: {combination_counts}")
         print(f"Results sizes: {[r['size'] for r in results]}")
+        print(f"Odds: {odds}")
 
         # Calculate total payout based on effective legs
         total_payout = sum(r['payout'] for r in results if r['size'] in effective_legs)
