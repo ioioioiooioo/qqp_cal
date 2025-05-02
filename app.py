@@ -17,6 +17,8 @@ def calculator():
         session['stake'] = 10.0  # Default stake
     if 'odds' not in session:
         session['odds'] = {item: 2.0 for item in items}  # Default odds
+    if 'selected_legs' not in session:
+        session['selected_legs'] = []  # Default to empty, will be set to all legs on first calculation
 
     if request.method == 'POST':
         # Get user inputs
@@ -38,6 +40,8 @@ def calculator():
         # Update session
         session['stake'] = stake
         session['odds'] = odds
+        if selected_legs:  # Only update session if new legs are selected
+            session['selected_legs'] = selected_legs
         session.modified = True
 
         # Validate: Ensure at least 1 item selected
@@ -70,19 +74,24 @@ def calculator():
                         'payout': payout  # Keep as float for summation
                     })
 
-        # If no legs are selected, default to all available legs
-        if not selected_legs:
-            selected_legs = list(combination_counts.keys())
+        # Use session-stored selected_legs if none are provided in the form
+        effective_legs = selected_legs if selected_legs else session['selected_legs']
+        # If no legs are selected (first submission), default to all available legs
+        if not effective_legs:
+            effective_legs = list(combination_counts.keys())
+            session['selected_legs'] = effective_legs
 
         # Debug print to verify
         print(f"Selected items: {selected_items}")
         print(f"Unique matches: {match_numbers}")
-        print(f"Selected legs: {selected_legs}")
+        print(f"Selected legs (form): {selected_legs}")
+        print(f"Effective legs: {effective_legs}")
+        print(f"Session selected_legs: {session['selected_legs']}")
         print(f"Combination counts: {combination_counts}")
         print(f"Results sizes: {[r['size'] for r in results]}")
 
-        # Calculate total payout based on selected legs
-        total_payout = sum(r['payout'] for r in results if r['size'] in selected_legs)
+        # Calculate total payout based on effective legs
+        total_payout = sum(r['payout'] for r in results if r['size'] in effective_legs)
 
         result = {
             'selected': selected_items,
@@ -90,7 +99,7 @@ def calculator():
             'combination_counts': combination_counts,
             'total_combinations': sum(combination_counts.values()),
             'total_payout': total_payout,
-            'selected_legs': selected_legs
+            'selected_legs': effective_legs
         }
         return render_template('index.html', items=items, result=result, stake=session['stake'], odds=session['odds'], max_k=max_k)
 
