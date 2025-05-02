@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>過關派彩計算器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">過關派彩計算器</h1>
+        <form method="POST" class="mt-4">
+            <div class="mb-3">
+                <label class="form-label">選擇選項 (Select Items):</label>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>比賽 (Match)</th>
+                            <th>選項 A <input type="checkbox" id="select-all-a" onchange="toggleColumn('a')"></th>
+                            <th>選項 B <input type="checkbox" id="select-all-b" onchange="toggleColumn('b')"></th>
+                            <th>選項 C <input type="checkbox" id="select-all-c" onchange="toggleColumn('c')"></th>
+                            <th>選項 D <input type="checkbox" id="select-all-d" onchange="toggleColumn('d')"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in range(1, 7) %}
+                            <tr>
+                                <td>比賽 {{ i }}</td>
+                                {% for c in ['a', 'b', 'c', 'd'] %}
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="form-check me-2">
+                                                <input type="checkbox" name="items" value="{{ i }}{{ c }}"
+                                                    id="{{ i }}{{ c }}"
+                                                    class="form-check-input"
+                                                    {% if result is defined and i|string + c in result.selected %}checked{% endif %}
+                                                    onchange="toggleOdds(this)">
+                                                <label for="{{ i }}{{ c }}" class="form-check-label">{{ i }}{{ c }}</label>
+                                            </div>
+                                            <input type="number" name="odds_{{ i }}{{ c }}" id="odds_{{ i }}{{ c }}"
+                                                class="form-control form-control-sm odds-input"
+                                                step="0.01" value="{{ odds[i|string + c]|default('2.00', true) if result is defined and i|string + c in result.selected else '2.00' }}"
+                                                {% if result is defined and i|string + c not in result.selected %}disabled{% endif %}>
+                                        </div>
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mb-3">
+                <label for="stake" class="form-label">投注金額 (Stake):</label>
+                <input type="number" name="stake" id="stake" class="form-control" step="0.01" value="{{ stake }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">計算派彩</button>
+        </form>
+
+        {% if error %}
+            <div class="alert alert-danger mt-3">{{ error }}</div>
+        {% endif %}
+
+        {% if result %}
+            <div class="mt-4">
+                <h3>計算結果</h3>
+                <p><strong>選擇的選項:</strong> {{ result.selected|join(', ') }}</p>
+                <p><strong>組合數量 (Combination Counts):</strong></p>
+                <ul>
+                    {% for k in range(1, min(result.selected|length + 1, 7)) if k in result.combination_counts %}
+                        <li>{{ k }}-leg: {{ result.combination_counts[k] }}</li>
+                    {% endfor %}
+                </ul>
+                <p><strong>總組合數:</strong> {{ result.total_combinations }}</p>
+                <p><strong>總派彩:</strong> HK${{ '{:,.2f}'.format(result.combinations|sum(attribute='payout')) }}</p>
+                <h4>組合與派彩總結 (Combinations and Payouts Summary):</h4>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>組合大小 (Size)</th>
+                            <th>組合數量 (Count)</th>
+                            <th>總派彩 (Total Payout)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for k in range(1, min(result.selected|length + 1, 7)) if k in result.combination_counts %}
+                            <tr>
+                                <td>{{ k }}-leg</td>
+                                <td>{{ result.combination_counts[k] }}</td>
+                                <td>HK${{ '{:,.2f}'.format(result.combinations|selectattr('size', 'equalto', k)|sum(attribute='payout')) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleOdds(checkbox) {
+            const oddsInput = document.getElementById('odds_' + checkbox.value);
+            oddsInput.disabled = !checkbox.checked;
+            if (checkbox.checked && !oddsInput.value) {
+                oddsInput.value = '2.00';
+            }
+        }
+
+        function toggleColumn(column) {
+            const selectAll = document.getElementById(`select-all-${column}`);
+            const checkboxes = document.querySelectorAll(`input[name="items"][value$="${column}"]`);
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+                toggleOdds(cb);
+            });
+        }
+
+        // Initialize odds inputs on page load
+        document.querySelectorAll('input[name="items"]').forEach(checkbox => {
+            toggleOdds(checkbox);
+        });
+    </script>
+</body>
+</html>

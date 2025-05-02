@@ -1,0 +1,29 @@
+body {
+    background-color: #f8f9fa;
+}
+.container {
+    max-width: 900px;
+}
+.table {
+    font-size: 0.9rem;
+}
+.table th, .table td {
+    text-align: center;
+    vertical-align: middle;
+}
+.table th input[type="checkbox"] {
+    margin-left: 5px;
+}
+.form-check {
+    display: inline-block;
+    margin-right: 10px;
+}
+.odds-input {
+    width: 80px;
+}
+.form-control-sm {
+    padding: 0.2rem;
+}
+.alert {
+    font-weight: bold;
+}

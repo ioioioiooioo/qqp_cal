@@ -1,0 +1,85 @@
+from flask import Flask, render_template, request, session
+import itertools
+
+app = Flask(__name__)
+app.secret_key = 'your-secret-key'  # Required for session
+
+# Add min to Jinja2 environment
+app.jinja_env.globals.update(min=min)
+
+# Item set (24 items: 1a-6a, 1b-6b, 1c-6c, 1d-6d)
+items = [f'{i}{c}' for i in range(1, 7) for c in ['a', 'b', 'c', 'd']]
+
+@app.route('/', methods=['GET', 'POST'])
+def calculator():
+    # Initialize session defaults
+    if 'stake' not in session:
+        session['stake'] = 10.0  # Default stake
+    if 'odds' not in session:
+        session['odds'] = {item: 2.0 for item in items}  # Default odds
+
+    if request.method == 'POST':
+        # Get user inputs
+        selected_items = request.form.getlist('items')
+        stake = request.form.get('stake', session['stake'])
+        try:
+            stake = float(stake)
+        except ValueError:
+            stake = session['stake']
+        odds = {}
+        for item in items:
+            odds_value = request.form.get(f'odds_{item}', session['odds'].get(item, 2.0))
+            try:
+                odds[item] = float(odds_value) if odds_value else 2.0
+            except (ValueError, TypeError):
+                odds[item] = session['odds'].get(item, 2.0)
+
+        # Update session
+        session['stake'] = stake
+        session['odds'] = odds
+        session.modified = True
+
+        # Validate: Ensure at least 1 item selected
+        if not selected_items:
+            return render_template('index.html', items=items, error="Please select at least 1 item.", stake=session['stake'], odds=session['odds'])
+
+        # Generate combinations for 1 to n items, capped at 6
+        results = []
+        combination_counts = {}
+        n = len(selected_items)
+        max_k = min(n, n//2)  # Cap at n or 6 #karl changed 6 to n//2
+        for k in range(1, max_k + 1):
+            if k > n:  # Skip if k exceeds number of items
+                continue
+            combos = list(itertools.combinations(selected_items, k))
+            if combos:  # Only include if there are valid combinations
+                combination_counts[k] = len(combos)
+                for combo in combos:
+                    parlay_odds = 1
+                    for item in combo:
+                        parlay_odds *= odds.get(item, 2.0)
+                    payout = stake * parlay_odds // 2 #karl added //2
+                    results.append({
+                        'size': k,
+                        'combo': ', '.join(combo),
+                        'parlay_odds': round(parlay_odds, 2),
+                        'payout': payout  # Keep as float for summation
+                    })
+
+        # Debug print to verify
+        print(f"Selected items: {selected_items}")
+        print(f"Combination counts: {combination_counts}")
+        print(f"Results sizes: {[r['size'] for r in results]}")
+
+        result = {
+            'selected': selected_items,
+            'combinations': results,
+            'combination_counts': combination_counts,
+            'total_combinations': sum(combination_counts.values())
+        }
+        return render_template('index.html', items=items, result=result, stake=session['stake'], odds=session['odds'])
+
+    return render_template('index.html', items=items, stake=session['stake'], odds=session['odds'])
+
+if __name__ == '__main__':
+    app.run(debug=True)
