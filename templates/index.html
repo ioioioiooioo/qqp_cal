@@ -13,10 +13,6 @@
         <p class="text-center">派彩計算結果只供參考，實際派彩當以博彩機構公佈為準。</p>
         <form method="POST" class="mt-4" id="calculatorForm">
             <div class="mb-3">
-                <label for="remark" class="form-label">備註 (Remarks):</label>
-                <input type="text" name="remark" id="remark" class="form-control mb-3" placeholder="輸入備註 (e.g., 足球比賽)">
-            </div>
-            <div class="mb-3">
                 <label class="form-label">選項 (Select Items):</label>
                 <table class="table table-bordered">
                     <thead>
@@ -67,6 +63,10 @@
             <div class="mb-3">
                 <label for="stake" class="form-label">投注金額 (Stake):</label>
                 <input type="number" name="stake" id="stake" class="form-control" step="0.01" value="{{ stake }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="remark" class="form-label">備註 (Remarks):</label>
+                <input type="text" name="remark" id="remark" class="form-control mb-3" placeholder="輸入備註 (e.g., 足球比賽)">
             </div>
             {% if error %}
                 <div class="alert alert-danger mt-3">{{ error }}</div>
@@ -131,7 +131,7 @@
         // Array to store calculation history
         let calculationHistory = JSON.parse(localStorage.getItem('calculationHistory')) || [];
         let activeCardIndex = null;
-
+    
         // Function to get the current form state
         function getFormState() {
             const state = {
@@ -155,7 +155,7 @@
             });
             return state;
         }
-
+    
         // Function to compare form state (excluding legs)
         function hasFormChanged(newState) {
             if (!lastFormState) return true;
@@ -173,7 +173,7 @@
             if (newState.stake !== lastFormState.stake) return true;
             return false;
         }
-
+    
         // Function to save calculation history
         function saveCalculationHistory() {
             const currentState = getFormState();
@@ -189,7 +189,7 @@
                 updateHistoryDisplay();
             }
         }
-
+    
         // Function to update history display
         function updateHistoryDisplay() {
             const historyList = document.getElementById('historyList');
@@ -198,7 +198,7 @@
                 const card = document.createElement('div');
                 card.className = 'card mb-2';
                 card.style.cursor = 'pointer';
-
+    
                 const cardHeader = document.createElement('div');
                 cardHeader.className = 'card-header d-flex justify-content-between align-items-center';
                 cardHeader.innerHTML = `<h5 class="mb-0">計算 ${index + 1}: ${entry.remark}</h5>`;
@@ -211,11 +211,11 @@
                     toggleCard(index);
                 };
                 cardHeader.appendChild(toggleIcon);
-
+    
                 const cardBody = document.createElement('div');
                 cardBody.id = `collapse${index}`;
                 cardBody.className = 'card-body' + (activeCardIndex === index ? '' : ' collapse');
-
+    
                 // Build odds display for each match, showing only checked items
                 let bodyContent = '';
                 for (let match = 1; match <= 6; match++) {
@@ -227,42 +227,41 @@
                         }
                         return null;
                     }).filter(val => val !== null);
-
+    
                     if (matchItems.length > 0) {
                         bodyContent += `<p><strong>第${match}關:</strong> ${matchItems.join(' / ')}</p>`;
                     }
                 }
-
+    
                 cardBody.innerHTML = `
                     ${bodyContent || '<p>無選擇項目</p>'}
                     <p><strong>投注金額:</strong> ${entry.stake}</p>
                     <button class="btn btn-primary btn-sm mt-2" onclick="calculateFromHistory(${index}, event)">計算</button>
                     <button class="btn btn-danger btn-sm mt-2 ms-2" onclick="deleteHistory(${index}, event)">刪除</button>
                 `;
-
+    
                 card.appendChild(cardHeader);
                 card.appendChild(cardBody);
-
+    
                 card.onclick = (e) => {
                     if (!e.target.classList.contains('btn') && !e.target.id.startsWith('toggleIcon')) {
                         setActiveCard(index);
                     }
                 };
-
+    
                 historyList.appendChild(card);
             });
         }
-
-        // Function to set active card and keep it expanded
+    
+        // Function to set active card and keep it expanded (no calculation)
         function setActiveCard(index) {
             if (activeCardIndex !== index) {
                 activeCardIndex = index;
                 updateHistoryDisplay();
-                restoreCalculation(index);
             }
         }
-
-        // Function to toggle individual card
+    
+        // Function to toggle individual card (no calculation)
         function toggleCard(index) {
             if (activeCardIndex === index) {
                 activeCardIndex = null;
@@ -271,8 +270,8 @@
             }
             updateHistoryDisplay();
         }
-
-        // Function to expand/collapse all cards
+    
+        // Function to expand/collapse all cards (no calculation)
         function toggleAllCards(expand) {
             if (expand) {
                 activeCardIndex = calculationHistory.length > 0 ? 0 : null; // Set first card as active if any
@@ -281,7 +280,7 @@
             }
             updateHistoryDisplay();
         }
-
+    
         // Function to restore a calculation
         function restoreCalculation(index) {
             const state = calculationHistory[index];
@@ -308,14 +307,14 @@
             // Restore remark
             document.getElementById('remark').value = state.remark;
         }
-
+    
         // Function to calculate from history
         function calculateFromHistory(index, event) {
             event.stopPropagation();
             restoreCalculation(index);
             document.getElementById('calculatorForm').submit();
         }
-
+    
         // Function to delete a history entry with confirmation
         function deleteHistory(index, event) {
             event.stopPropagation();
@@ -325,13 +324,13 @@
                 updateHistoryDisplay();
             }
         }
-
+    
         // Function to submit form without saving history (for leg changes)
         function submitFormWithoutHistory() {
             lastFormState = getFormState();
             document.getElementById('calculatorForm').submit();
         }
-
+    
         // Store history for each input (for undo functionality)
         function storeValue(input) {
             const id = input.id;
@@ -346,7 +345,7 @@
                 }
             }
         }
-
+    
         function setToZero(inputId) {
             const input = document.getElementById(inputId);
             if (input) {
@@ -354,7 +353,7 @@
                 input.value = '0.00';
             }
         }
-
+    
         function undo(inputId) {
             const input = document.getElementById(inputId);
             if (input && history[inputId] && history[inputId].length > 0) {
@@ -362,7 +361,7 @@
                 input.value = history[inputId].length > 0 ? history[inputId][history[id].length - 1] : '0.00';
             }
         }
-
+    
         function toggleOdds(checkbox) {
             const oddsInput = document.getElementById('odds_' + checkbox.value);
             oddsInput.disabled = !checkbox.checked;
@@ -370,7 +369,7 @@
                 oddsInput.value = oddsInput.defaultValue || '0.00';
             }
         }
-
+    
         function toggleColumn(column) {
             const selectAll = document.getElementById(`select-all-${column}`);
             const checkboxes = document.querySelectorAll(`input[name="items"][value$="${column}"]`);
@@ -379,7 +378,7 @@
                 toggleOdds(cb);
             });
         }
-
+    
         // Set initial focus to 1a odds input
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('odds_1a').focus();
@@ -397,17 +396,17 @@
             historyList.parentNode.insertBefore(expandAllBtn, historyList);
             historyList.parentNode.insertBefore(collapseAllBtn, historyList);
         });
-
+    
         document.querySelectorAll('input[name="items"]').forEach(checkbox => {
             toggleOdds(checkbox);
         });
-
+    
         // On form submit, save history unless only legs changed
         document.getElementById('calculatorForm').addEventListener('submit', (e) => {
             saveCalculationHistory();
         });
-
+    
         let lastFormState = null;
     </script>
-</body>
-</html>
+    </body>
+    </html>
