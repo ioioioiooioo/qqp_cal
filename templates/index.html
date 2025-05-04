@@ -28,12 +28,15 @@
                             <tr>
                                 <td>第 {{ i }} 關</td>
                                 {% for c in ['a', 'b', 'c', 'd'] %}
+                                    {% set input_index = (i - 1) * 4 + (['a', 'b', 'c', 'd'].index(c) + 1) %}
+                                    {% set checkbox_index = input_index + 24 %}
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="form-check me-2">
                                                 <input type="checkbox" name="items" value="{{ i }}{{ c }}"
                                                     id="{{ i }}{{ c }}"
                                                     class="form-check-input"
+                                                    tabindex="{{ checkbox_index }}"
                                                     {% if result is defined and i|string + c in result.selected %}checked{% endif %}
                                                     onchange="toggleOdds(this)">
                                                 <label for="{{ i }}{{ c }}" class="form-check-label">{{ i }}{{ c }}</label>
@@ -41,6 +44,7 @@
                                             <input type="number" name="odds_{{ i }}{{ c }}" id="odds_{{ i }}{{ c }}"
                                                 class="form-control form-control-sm odds-input"
                                                 step="0.01" value="{{ odds[i|string + c]|string if result is defined and i|string + c in result.selected else '0.00' if odds[i|string + c] == 0 else '2.00' }}"
+                                                tabindex="{{ input_index }}"
                                                 {% if result is defined and i|string + c not in result.selected %}disabled{% endif %}>
                                         </div>
                                     </td>
@@ -54,15 +58,14 @@
                 <label for="stake" class="form-label">投注金額 (Stake):</label>
                 <input type="number" name="stake" id="stake" class="form-control" step="0.01" value="{{ stake }}" required>
             </div>
-
             {% if error %}
                 <div class="alert alert-danger mt-3">{{ error }}</div>
             {% endif %}
-
             {% if result %}
                 <div class="mt-4">
                     <h3>計算結果</h3>
                     <p><strong>選擇的選項:</strong> {{ result.selected|join(', ') }}</p>
+                    <p><strong>剩餘計算次數:</strong> {{ result.remaining_slots if result.remaining_slots is defined else 0 }}</p>
                     <p><strong>組合數量 (Combination Counts):</strong></p>
                     <ul>
                         {% for k in range(1, max_k + 1) if k in result.combination_counts %}
@@ -71,6 +74,7 @@
                                     <input type="checkbox" name="legs" value="{{ k }}"
                                            id="leg_{{ k }}"
                                            class="form-check-input"
+                                           tabindex="{{ 48 + loop.index }}"
                                            {% if result.selected_legs and k in result.selected_legs %}checked{% endif %}>
                                     <label for="leg_{{ k }}" class="form-check-label">{{ k }}-leg: {{ result.combination_counts[k] }}</label>
                                 </div>
@@ -101,7 +105,6 @@
                     </table>
                 </div>
             {% endif %}
-
             <button type="submit" class="btn btn-primary mt-3">計算派彩</button>
         </form>
     </div>
@@ -113,9 +116,8 @@
         function toggleOdds(checkbox) {
             const oddsInput = document.getElementById('odds_' + checkbox.value);
             oddsInput.disabled = !checkbox.checked;
-            // Do not reset to 2.00; preserve user input (including 0)
             if (checkbox.checked && !oddsInput.value) {
-                oddsInput.value = oddsInput.defaultValue || '0.00'; // Use defaultValue or 0.00
+                oddsInput.value = oddsInput.defaultValue || '0.00';
             }
         }
 
@@ -128,7 +130,11 @@
             });
         }
 
-        // Initialize odds inputs on page load
+        // Set initial focus to 1a odds input
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('odds_1a').focus();
+        });
+
         document.querySelectorAll('input[name="items"]').forEach(checkbox => {
             toggleOdds(checkbox);
         });
