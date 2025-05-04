@@ -69,23 +69,19 @@
             {% if result %}
                 <div class="mt-4">
                     <h3>計算結果</h3>
-                    <p><strong>選擇的選項:</strong> {{ result.selected|join(', ') }}</p>
+                    <p><strong>已選擇的注項:</strong> {{ result.selected|join(', ') }}</p>
                     <p><strong>剩餘計算次數:</strong> {{ result.remaining_slots if result.remaining_slots is defined else 0 }}</p>
-                    <p><strong>組合數量 (Combination Counts):</strong></p>
-                    <ul>
-                        {% for k in range(1, max_k + 1) if k in result.combination_counts %}
-                            <li>
-                                <div class="form-check">
-                                    <input type="checkbox" name="legs" value="{{ k }}"
-                                           id="leg_{{ k }}"
-                                           class="form-check-input"
-                                           tabindex="{{ 48 + loop.index }}"
-                                           {% if result.selected_legs and k in result.selected_legs %}checked{% endif %}>
-                                    <label for="leg_{{ k }}" class="form-check-label">{{ k }}-leg: {{ result.combination_counts[k] }}</label>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                    <p><strong>總組合數量 (Combination Counts):</strong></p>
+                    {% for k in range(1, max_k + 1) if k in result.combination_counts %}
+                        <div class="form-check">
+                            <input type="checkbox" name="legs" value="{{ k }}"
+                                id="leg_{{ k }}"
+                                class="form-check-input"
+                                tabindex="{{ 48 + loop.index }}"
+                                {% if result.selected_legs and k in result.selected_legs %}checked{% endif %}>
+                            {% if k == 1 %}第一關{% elif k == 2 %}2串1{% elif k == 3 %}3串1{% elif k == 4 %}4串1{% elif k == 5 %}5串1{% else %}6串1{% endif %}: {{ result.combination_counts[k] }}
+                        </div>
+                    {% endfor %}
                     <p><strong>總組合數:</strong> {{ result.total_combinations }}</p>
                     <p><strong>總派彩:</strong> HK${{ '{:,.2f}'.format(result.total_payout) }}</p>
                     <button type="submit" class="btn btn-secondary mt-2">重新計算派彩</button>
