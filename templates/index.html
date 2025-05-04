@@ -73,13 +73,13 @@
                     <p><strong>剩餘計算次數:</strong> {{ result.remaining_slots if result.remaining_slots is defined else 0 }}</p>
                     <p><strong>總組合數量 (Combination Counts):</strong></p>
                     {% for k in range(1, max_k + 1) if k in result.combination_counts %}
-                        <div class="form-check">
+                        <div class="form-check d-block">
                             <input type="checkbox" name="legs" value="{{ k }}"
                                 id="leg_{{ k }}"
                                 class="form-check-input"
                                 tabindex="{{ 48 + loop.index }}"
                                 {% if result.selected_legs and k in result.selected_legs %}checked{% endif %}>
-                            {% if k == 1 %}第一關{% elif k == 2 %}2串1{% elif k == 3 %}3串1{% elif k == 4 %}4串1{% elif k == 5 %}5串1{% else %}6串1{% endif %}: {{ result.combination_counts[k] }}
+                            {% if k == 1 %}第一關{% elif k == 2 %}2串1{% elif k == 3 %}3串1{% elif k == 4 %}4串1{% elif k == 5 %}5串1{% else %}6串1{% endif %}: {{ result.combination_counts[k] }}條
                         </div>
                     {% endfor %}
                     <p><strong>總組合數:</strong> {{ result.total_combinations }}</p>
