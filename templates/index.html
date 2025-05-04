@@ -74,7 +74,7 @@
             {% if result %}
                 <div class="row">
                     <div class="col-8">
-                        <h3>計算結果</h3>
+                        <h3 class="mt-2">計算結果</h3>
                         <p><strong>選擇的選項:</strong> {{ result.selected|join(', ') }}</p>
                         <p><strong>剩餘計算次數:</strong> {{ result.remaining_slots if result.remaining_slots is defined else 0 }}</p>
                         <p><strong>組合數量 (Combination Counts):</strong></p>
@@ -92,7 +92,7 @@
                         <p><strong>總組合數:</strong> {{ result.total_combinations }}</p>
                         <p><strong>總派彩:</strong> HK${{ '{:,.2f}'.format(result.total_payout) }}</p>
                         <button type="submit" class="btn btn-secondary mt-2">重新計算派彩</button>
-                        <h4>組合與派彩總結 (Combinations and Payouts Summary):</h4>
+                        <h4 class="mt-1">組合與派彩總結 (Combinations and Payouts Summary):</h4>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
@@ -113,7 +113,7 @@
                         </table>
                     </div>
                     <div class="col-4">
-                        <h3>計算歷史</h3>
+                        <h3 class="mt-2">計算歷史</h3>
                         <div id="historyList" class="mb-3"></div>
                     </div>
                 </div>
