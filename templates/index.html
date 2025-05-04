@@ -10,7 +10,7 @@
     <div class="container mt-5">
         <h1 class="text-center">過關派彩計算器</h1>
         <p class="text-center">派彩計算結果只供參考，實際派彩當以博彩機構公佈為準。</p>
-        <form method="POST" class="mt-4">
+        <form method="POST" class="mt-4" id="calculatorForm">
             <div class="mb-3">
                 <label class="form-label">選項 (Select Items):</label>
                 <table class="table table-bordered">
@@ -68,17 +68,20 @@
             {% endif %}
             {% if result %}
                 <div class="mt-4">
+                    <h3>計算歷史</h3>
+                    <div id="historyList" class="mb-3"></div>
                     <h3>計算結果</h3>
-                    <p><strong>已選擇的注項:</strong> {{ result.selected|join(', ') }}</p>
+                    <p><strong>選擇的選項:</strong> {{ result.selected|join(', ') }}</p>
                     <p><strong>剩餘計算次數:</strong> {{ result.remaining_slots if result.remaining_slots is defined else 0 }}</p>
-                    <p><strong>總組合數量 (Combination Counts):</strong></p>
+                    <p><strong>組合數量 (Combination Counts):</strong></p>
                     {% for k in range(1, max_k + 1) if k in result.combination_counts %}
                         <div class="form-check d-block">
                             <input type="checkbox" name="legs" value="{{ k }}"
-                                id="leg_{{ k }}"
-                                class="form-check-input"
-                                tabindex="{{ 48 + loop.index }}"
-                                {% if result.selected_legs and k in result.selected_legs %}checked{% endif %}>
+                                   id="leg_{{ k }}"
+                                   class="form-check-input"
+                                   tabindex="{{ 48 + loop.index }}"
+                                   {% if result.selected_legs and k in result.selected_legs %}checked{% endif %}
+                                   onchange="submitFormWithoutHistory()">
                             {% if k == 1 %}第一關{% elif k == 2 %}2串1{% elif k == 3 %}3串1{% elif k == 4 %}4串1{% elif k == 5 %}5串1{% else %}6串1{% endif %}: {{ result.combination_counts[k] }}條
                         </div>
                     {% endfor %}
@@ -97,7 +100,7 @@
                         <tbody>
                             {% for k in range(1, max_k + 1) if k in result.combination_counts %}
                                 <tr>
-                                    <td>{{ k }}-leg</td>
+                                    <td>{% if k == 1 %}第一關{% elif k == 2 %}2串1{% elif k == 3 %}3串1{% elif k == 4 %}4串1{% elif k == 5 %}5串1{% else %}6串1{% endif %}</td>
                                     <td>{{ result.combination_counts[k] }}</td>
                                     <td>HK${{ '{:,.2f}'.format(result.combinations|selectattr('size', 'equalto', k)|sum(attribute='payout')) }}</td>
                                 </tr>
@@ -106,7 +109,7 @@
                     </table>
                 </div>
             {% endif %}
-            <button type="submit" class="btn btn-primary mt-3">計算派彩</button>
+            <button type="submit" class="btn btn-primary mt-3">快速保存</button>
         </form>
     </div>
     <div class="container mt-5">
@@ -116,20 +119,124 @@
     <script>
         // Object to store history for each input (up to 5 steps)
         const history = {};
+        // Array to store calculation history
+        let calculationHistory = JSON.parse(localStorage.getItem('calculationHistory')) || [];
+        let lastFormState = null;
 
+        // Function to get the current form state
+        function getFormState() {
+            const state = {
+                items: {},
+                odds: {},
+                stake: document.getElementById('stake').value,
+                legs: {}
+            };
+            // Store checkbox states (items)
+            document.querySelectorAll('input[name="items"]').forEach(checkbox => {
+                state.items[checkbox.id] = checkbox.checked;
+            });
+            // Store odds values
+            document.querySelectorAll('input[name^="odds_"]').forEach(input => {
+                state.odds[input.id] = input.value;
+            });
+            // Store legs (for restoration, not comparison)
+            document.querySelectorAll('input[name="legs"]').forEach(checkbox => {
+                state.legs[checkbox.id] = checkbox.checked;
+            });
+            return state;
+        }
+
+        // Function to compare form state (excluding legs)
+        function hasFormChanged(newState) {
+            if (!lastFormState) return true;
+            // Compare items
+            for (let key in newState.items) {
+                if (newState.items[key] !== lastFormState.items[key]) return true;
+            }
+            // Compare odds
+            for (let key in newState.odds) {
+                if (newState.odds[key] !== lastFormState.odds[key]) return true;
+            }
+            // Compare stake
+            if (newState.stake !== lastFormState.stake) return true;
+            return false;
+        }
+
+        // Function to save calculation history
+        function saveCalculationHistory() {
+            const currentState = getFormState();
+            if (hasFormChanged(currentState)) {
+                calculationHistory.push(currentState);
+                // Limit history to 10 entries
+                if (calculationHistory.length > 10) {
+                    calculationHistory.shift();
+                }
+                // Save to localStorage
+                localStorage.setItem('calculationHistory', JSON.stringify(calculationHistory));
+                lastFormState = currentState;
+                updateHistoryDisplay();
+            }
+        }
+
+        // Function to update history display
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            calculationHistory.forEach((entry, index) => {
+                const selectedItems = Object.keys(entry.items)
+                    .filter(key => entry.items[key])
+                    .join(', ') || '無選擇';
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item mb-2 p-2 border rounded';
+                historyItem.style.cursor = 'pointer';
+                historyItem.innerHTML = `計算 ${index + 1}: 選擇的選項: ${selectedItems}, 投注金額: ${entry.stake}`;
+                historyItem.onclick = () => restoreCalculation(index);
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // Function to restore a calculation
+        function restoreCalculation(index) {
+            const state = calculationHistory[index];
+            // Restore items
+            for (let key in state.items) {
+                const checkbox = document.getElementById(key);
+                if (checkbox) {
+                    checkbox.checked = state.items[key];
+                    toggleOdds(checkbox);
+                }
+            }
+            // Restore odds
+            for (let key in state.odds) {
+                const input = document.getElementById(key);
+                if (input) input.value = state.odds[key];
+            }
+            // Restore stake
+            document.getElementById('stake').value = state.stake;
+            // Restore legs
+            for (let key in state.legs) {
+                const checkbox = document.getElementById(key);
+                if (checkbox) checkbox.checked = state.legs[key];
+            }
+            // Submit form to recalculate
+            document.getElementById('calculatorForm').submit();
+        }
+
+        // Function to submit form without saving history (for leg changes)
+        function submitFormWithoutHistory() {
+            lastFormState = getFormState();
+            document.getElementById('calculatorForm').submit();
+        }
+
+        // Store history for each input (for undo functionality)
         function storeValue(input) {
             const id = input.id;
             const value = input.value;
-
-            // Initialize history for this input if it doesn't exist
             if (!history[id]) {
                 history[id] = [];
             }
-
-            // Add the current value to history if it's different from the last one
             if (history[id].length === 0 || history[id][history[id].length - 1] !== value) {
                 history[id].push(value);
-                // Limit history to 5 steps
                 if (history[id].length > 5) {
                     history[id].shift();
                 }
@@ -139,7 +246,6 @@
         function setToZero(inputId) {
             const input = document.getElementById(inputId);
             if (input) {
-                // Store current value in history before setting to 0
                 storeValue(input);
                 input.value = '0.00';
             }
@@ -148,9 +254,7 @@
         function undo(inputId) {
             const input = document.getElementById(inputId);
             if (input && history[inputId] && history[inputId].length > 0) {
-                // Pop the last value from history
                 history[inputId].pop();
-                // Set input to the previous value (or default to 0.00 if history is empty)
                 input.value = history[inputId].length > 0 ? history[inputId][history[inputId].length - 1] : '0.00';
             }
         }
@@ -175,10 +279,16 @@
         // Set initial focus to 1a odds input
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('odds_1a').focus();
+            updateHistoryDisplay();
         });
 
         document.querySelectorAll('input[name="items"]').forEach(checkbox => {
             toggleOdds(checkbox);
+        });
+
+        // On form submit, save history unless only legs changed
+        document.getElementById('calculatorForm').addEventListener('submit', (e) => {
+            saveCalculationHistory();
         });
     </script>
 </body>

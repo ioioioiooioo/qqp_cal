@@ -78,7 +78,7 @@ def calculator():
                     parlay_odds = 1
                     for item in combo:
                         parlay_odds *= odds.get(item, 0.0)  # Use 0.0 for non-winning races
-                    payout = stake * parlay_odds  # Adjusted payout calculation
+                    payout = stake * parlay_odds  # Removed // 2 as per your instruction
                     results.append({
                         'size': k,
                         'combo': ', '.join(combo),
