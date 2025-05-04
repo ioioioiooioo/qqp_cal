@@ -48,21 +48,33 @@ def calculator():
         if not selected_items:
             return render_template('index.html', items=items, error="Please select at least 1 item.", stake=session['stake'], odds=session['odds'])
 
-        # Determine number of unique matches
+        # Group selected items by match
+        matches = {i: [] for i in range(1, 7)}
+        for item in selected_items:
+            match_num = int(item[0])
+            matches[match_num].append(item)
+
+        # Determine number of unique matches with at least one selected item
         match_numbers = set(int(item[0]) for item in selected_items)  # Extract unique match numbers
         n = len(match_numbers)  # Number of unique matches
         max_k = min(n, 6)  # Cap at n matches or 6
 
-        # Generate combinations for 1 to max_k items
+        # Generate valid combinations (one item per match)
         results = []
         combination_counts = {}
+        match_list = sorted(match_numbers)  # List of matches with selections (e.g., [1, 2, 3, 4, 5, 6])
+
         for k in range(1, max_k + 1):
-            if k > n:
-                continue
-            combos = list(itertools.combinations(selected_items, k))
-            if combos:
-                combination_counts[k] = len(combos)
-                for combo in combos:
+            # Choose k matches out of the available matches
+            match_combinations = list(itertools.combinations(match_list, k))
+            combination_counts[k] = 0
+
+            for match_combo in match_combinations:
+                # For each match in the combination, get the list of selected items
+                items_per_match = [matches[match] for match in match_combo]
+                # Generate all possible combinations by picking one item from each match
+                combo_iter = itertools.product(*items_per_match)
+                for combo in combo_iter:
                     parlay_odds = 1
                     for item in combo:
                         parlay_odds *= odds.get(item, 0.0)  # Use 0.0 for non-winning races
@@ -73,6 +85,7 @@ def calculator():
                         'parlay_odds': round(parlay_odds, 2),
                         'payout': payout  # Keep as float for summation
                     })
+                    combination_counts[k] += 1
 
         # Use session-stored selected_legs if none are provided in the form
         effective_legs = selected_legs if selected_legs else session['selected_legs']
