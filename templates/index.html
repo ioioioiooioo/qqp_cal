@@ -41,11 +41,16 @@
                                                     onchange="toggleOdds(this)">
                                                 <label for="{{ i }}{{ c }}" class="form-check-label">{{ i }}{{ c }}</label>
                                             </div>
-                                            <input type="number" name="odds_{{ i }}{{ c }}" id="odds_{{ i }}{{ c }}"
-                                                class="form-control form-control-sm odds-input"
-                                                step="0.01" value="{{ odds[i|string + c]|string if result is defined and i|string + c in result.selected else '0.00' if odds[i|string + c] == 0 else '2.00' }}"
-                                                tabindex="{{ input_index }}"
-                                                {% if result is defined and i|string + c not in result.selected %}disabled{% endif %}>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" name="odds_{{ i }}{{ c }}" id="odds_{{ i }}{{ c }}"
+                                                    class="form-control odds-input"
+                                                    step="0.01" value="{{ odds[i|string + c]|string if result is defined and i|string + c in result.selected else '0.00' if odds[i|string + c] == 0 else '2.00' }}"
+                                                    tabindex="{{ input_index }}"
+                                                    {% if result is defined and i|string + c not in result.selected %}disabled{% endif %}
+                                                    oninput="storeValue(this)">
+                                                <button type="button" class="btn btn-outline-secondary" onclick="setToZero('odds_{{ i }}{{ c }}')">🅾️</button>
+                                                <button type="button" class="btn btn-outline-secondary" onclick="undo('odds_{{ i }}{{ c }}')">↩️</button>
+                                            </div>
                                         </div>
                                     </td>
                                 {% endfor %}
@@ -113,6 +118,47 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Object to store history for each input (up to 5 steps)
+        const history = {};
+
+        function storeValue(input) {
+            const id = input.id;
+            const value = input.value;
+
+            // Initialize history for this input if it doesn't exist
+            if (!history[id]) {
+                history[id] = [];
+            }
+
+            // Add the current value to history if it's different from the last one
+            if (history[id].length === 0 || history[id][history[id].length - 1] !== value) {
+                history[id].push(value);
+                // Limit history to 5 steps
+                if (history[id].length > 5) {
+                    history[id].shift();
+                }
+            }
+        }
+
+        function setToZero(inputId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                // Store current value in history before setting to 0
+                storeValue(input);
+                input.value = '0.00';
+            }
+        }
+
+        function undo(inputId) {
+            const input = document.getElementById(inputId);
+            if (input && history[inputId] && history[inputId].length > 0) {
+                // Pop the last value from history
+                history[inputId].pop();
+                // Set input to the previous value (or default to 0.00 if history is empty)
+                input.value = history[inputId].length > 0 ? history[inputId][history[inputId].length - 1] : '0.00';
+            }
+        }
+
         function toggleOdds(checkbox) {
             const oddsInput = document.getElementById('odds_' + checkbox.value);
             oddsInput.disabled = !checkbox.checked;
