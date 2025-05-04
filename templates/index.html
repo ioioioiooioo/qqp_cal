@@ -49,8 +49,7 @@
                                                     tabindex="{{ input_index }}"
                                                     {% if result is defined and i|string + c not in result.selected %}disabled{% endif %}
                                                     oninput="storeValue(this)">
-                                                <button type="button" class="btn btn-outline-secondary" onclick="setToZero('odds_{{ i }}{{ c }}')">🅾️</button>
-                                                <button type="button" class="btn btn-outline-secondary" onclick="undo('odds_{{ i }}{{ c }}')">🔙</button>
+                                                <button type="button" class="btn btn-outline-secondary" onclick="setToZero('odds_{{ i }}{{ c }}')">🅾️</button> 
                                             </div>
                                         </div>
                                     </td>
