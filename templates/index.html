@@ -367,11 +367,11 @@
         // Function to apply legs state and submit form
         function applyLegsAndSubmit(event) {
             event.preventDefault();
-            // Apply the stored legs state to the checkboxes before submission
             for (let key in legsState) {
                 const checkbox = document.getElementById(key);
                 if (checkbox) checkbox.checked = legsState[key];
             }
+            // 強制更新 lastFormState
             lastFormState = getFormState();
             document.getElementById('calculatorForm').submit();
         }
@@ -444,7 +444,8 @@
             const input = document.getElementById(inputId);
             if (input && history[inputId] && history[inputId].length > 0) {
                 history[inputId].pop();
-                input.value = history[inputId].length > 0 ? history[inputId][history[id].length - 1] : '0.00';
+                const len = history[inputId].length;
+                input.value = len > 0 ? history[inputId][len - 1] : '0.00';
             }
         }
 
