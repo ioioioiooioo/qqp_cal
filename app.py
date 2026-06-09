@@ -23,7 +23,14 @@ def calculator():
     if request.method == 'POST':
         # Get user inputs
         selected_items = request.form.getlist('items')
-        selected_legs = [int(leg) for leg in request.form.getlist('legs') if leg]  # Get checked leg sizes
+        selected_legs = []
+        for leg in request.form.getlist('legs'):
+            if leg and leg.strip():
+                try:
+                    selected_legs.append(int(leg))
+                except ValueError:
+                    pass
+                    
         stake = request.form.get('stake', session['stake'])
         try:
             stake = float(stake)
