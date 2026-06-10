@@ -10,30 +10,36 @@
         .leg-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
         
         .play-btn {
-            width: 48px !important;
-            height: 48px !important;
-            font-size: 1rem;
+            width: 52px !important;
+            height: 52px !important;
+            font-size: 0.95rem;
             font-weight: bold;
-            margin: 2px;
+            margin: 3px;
+            padding: 0;
+            line-height: 1;
+            border-radius: 8px;
         }
         .play-btn-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 6px;
             justify-content: center;
         }
 
         .slider-container {
             position: relative;
+            padding: 10px 0;
         }
         .slider-ticks {
             display: flex;
             justify-content: space-between;
-            padding: 0 8px;
-            font-size: 0.75rem;
-            color: #666;
+            padding: 0 10px;
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 4px;
         }
         .mode-btn.active { background-color: #198754 !important; color: white !important; }
+        .mode-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -94,7 +100,7 @@
                 const html = `
                     <div class="col-lg-6 col-xl-4 mb-4 leg-card">
                         <div class="card h-100">
-                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <div class="card-header bg-primary text-white">
                                 <span id="leg-title-${i}">第 ${i} 關</span>
                             </div>
                             <div class="card-body">
@@ -112,21 +118,17 @@
                                     </div>
                                 </div>
 
-                                <!-- 馬匹數量 Slider + Ticks -->
+                                <!-- 馬匹數量 Slider - 50 steps 非線性顯示 -->
                                 <div class="mb-3">
                                     <label class="form-label d-flex justify-content-between">
-                                        馬匹數量 
-                                        <span id="horses-value-${i}" class="slider-value text-primary">5</span>
+                                        馬匹數量 <span id="horses-value-${i}" class="text-primary fw-bold">5</span>
                                     </label>
-                                    <div class="slider-container">
-                                        <input type="range" class="form-range leg-horses" id="horses-${i}" 
-                                               min="1" max="20" value="5" step="1" 
-                                               oninput="updateHorseValue(${i}); calculateTotalBets()">
-                                        <div class="slider-ticks">
-                                            <span>1</span><span>2</span><span>3</span><span>4</span>
-                                            <span style="margin-left:15px">5</span>
-                                            <span>8</span><span>12</span><span>16</span><span>20</span>
-                                        </div>
+                                    <input type="range" class="form-range leg-horses" id="horses-${i}" 
+                                           min="0" max="49" value="20" step="1" 
+                                           oninput="updateHorseValue(${i}); calculateTotalBets()">
+                                    <div class="slider-ticks">
+                                        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                                        <span>8</span><span>12</span><span>16</span><span>20</span>
                                     </div>
                                 </div>
 
@@ -145,11 +147,15 @@
                     </div>`;
                 container.innerHTML += html;
             }
-            // 初始化
-            document.querySelectorAll('.leg-card').forEach((leg, idx) => {
-                const defaultBtn = leg.querySelector('[data-type="trio"]');
-                if (defaultBtn) selectPlay(defaultBtn, idx + 1);
-            });
+
+            // 初始化所有關卡
+            setTimeout(() => {
+                document.querySelectorAll('.leg-card').forEach((leg, idx) => {
+                    const defaultBtn = leg.querySelector('[data-type="trio"]');
+                    if (defaultBtn) selectPlay(defaultBtn, idx + 1);
+                });
+            }, 10);
+            
             calculateTotalBets();
         }
 
@@ -166,14 +172,24 @@
             document.getElementById(`leg-title-${legNum}`).innerHTML = 
                 `第 ${legNum} 關 - <strong>${fullName[btn.dataset.type]}</strong>`;
 
-            // W, P, W+P 強制複式
+            // 強制複式模式
             const modeBtns = btn.closest('.card-body').querySelectorAll('.mode-btn');
-            if (['win','place','winplace'].includes(btn.dataset.type)) {
-                modeBtns.forEach(b => {
-                    if (b.dataset.mode === 'complex') b.classList.add('active');
-                    else b.classList.remove('active');
-                });
-            }
+            const isForceComplex = ['win','place','winplace'].includes(btn.dataset.type);
+            
+            modeBtns.forEach(b => {
+                if (isForceComplex) {
+                    if (b.dataset.mode === 'complex') {
+                        b.classList.add('active');
+                        b.disabled = false;
+                    } else {
+                        b.classList.remove('active');
+                        b.disabled = true;
+                    }
+                } else {
+                    b.disabled = false;
+                }
+            });
+
             calculateTotalBets();
         }
 
@@ -185,8 +201,24 @@
         }
 
         function updateHorseValue(legNum) {
-            const value = document.getElementById(`horses-${legNum}`).value;
-            document.getElementById(`horses-value-${legNum}`).textContent = value;
+            const slider = document.getElementById(`horses-${legNum}`);
+            const displayValue = document.getElementById(`horses-value-${legNum}`);
+            
+            let raw = parseInt(slider.value);
+            
+            // 非線性映射：前半段 (1-5) 較寬，後半段壓縮
+            let horses;
+            if (raw <= 24) {
+                horses = Math.floor(raw / 5) + 1;     // 0-4 → 1, 5-9 → 2, ..., 20-24 → 5
+            } else {
+                horses = 5 + Math.floor((raw - 24) / 2.5); // 之後加速
+                if (horses > 20) horses = 20;
+            }
+            
+            displayValue.textContent = horses;
+            // 把真實馬匹數存到一個 data 屬性，方便 calculateTotalBets 使用
+            slider.dataset.horses = horses;
+            
             calculateTotalBets();
         }
 
