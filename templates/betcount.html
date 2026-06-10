@@ -74,7 +74,7 @@
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label">玩法</label>
-                                    <select class="form-select leg-type" onchange="calculateTotalBets()">
+                                    <select class="form-select leg-type" onchange="updateModeOptions(this); calculateTotalBets()">
                                         <option value="win">獨贏 (Win)</option>
                                         <option value="place">位置 (Place)</option>
                                         <option value="winplace">獨贏 + 位置</option>
@@ -88,11 +88,10 @@
                                     <label class="form-label">馬匹數量</label>
                                     <input type="number" class="form-control leg-horses" value="5" min="2" max="14" onchange="calculateTotalBets()">
                                 </div>
-                                <div>
+                                <div class="mb-3">
                                     <label class="form-label">投注模式</label>
                                     <select class="form-select leg-mode" onchange="calculateTotalBets()">
-                                        <option value="complex">複式</option>
-                                        <option value="banker" selected>1膽拖</option>
+                                        <!-- 選項由 JS 動態控制 -->
                                     </select>
                                 </div>
                             </div>
@@ -100,7 +99,32 @@
                     </div>`;
                 container.innerHTML += html;
             }
+            // 初始化所有關的模式
+            document.querySelectorAll('.leg-type').forEach(select => {
+                updateModeOptions(select);
+            });
             calculateTotalBets();
+        }
+
+        // 根據玩法動態更新模式選項
+        function updateModeOptions(typeSelect) {
+            const modeSelect = typeSelect.parentElement.parentElement.querySelector('.leg-mode');
+            const type = typeSelect.value;
+            
+            modeSelect.innerHTML = '';
+            
+            if (['win', 'place', 'winplace'].includes(type)) {
+                // 只能複式
+                modeSelect.innerHTML = '<option value="complex">複式</option>';
+                modeSelect.disabled = true;
+            } else {
+                // 可選擇複式或1膽拖
+                modeSelect.innerHTML = `
+                    <option value="complex">複式</option>
+                    <option value="banker" selected>1膽拖</option>
+                `;
+                modeSelect.disabled = false;
+            }
         }
 
         function calculateTotalBets() {
@@ -114,7 +138,7 @@
 
                 let bets = 0;
 
-                if (mode === 'complex') {
+                if (mode === 'complex' || ['win', 'place', 'winplace'].includes(type)) {
                     // 複式
                     switch(type) {
                         case 'win': bets = horses; break;
@@ -129,9 +153,6 @@
                     // 1膽拖
                     const feet = horses - 1;
                     switch(type) {
-                        case 'win': bets = 1; break;                    // 1膽拖 = 1注
-                        case 'place': bets = 1; break;
-                        case 'winplace': bets = 2; break;
                         case 'trio': bets = feet >= 2 ? Math.floor(feet*(feet-1)/2) : 0; break;
                         case 'quinella': bets = feet; break;
                         case 'placeq': bets = feet; break;
