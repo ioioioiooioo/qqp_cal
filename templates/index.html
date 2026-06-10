@@ -248,10 +248,51 @@
             });
         }
 
+        // ==================== 完整還原函數 ====================
         function loadHistory(index) {
-            // TODO: implement full restore if needed
-            alert('載入歷史功能開發中...');
+            if (index < 0 || index >= calculationHistory.length) return;
+    
+            const saved = calculationHistory[index];
+    
+            // 1. 還原 Stake
+            if (saved.stake) {
+                document.getElementById('stake').value = saved.stake;
+            }
+    
+            // 2. 還原 Remark
+            if (saved.remark !== undefined) {
+                document.getElementById('remark').value = saved.remark;
+            }
+    
+            // 3. 還原 Items 勾選
+            document.querySelectorAll('input[name="items"]').forEach(checkbox => {
+                checkbox.checked = saved.items[checkbox.value] || false;
+                toggleOdds(checkbox);   // 同步啟用/禁用 odds 輸入框
+            });
+    
+            // 4. 還原 Odds 值
+            document.querySelectorAll('input[name^="odds_"]').forEach(input => {
+                if (saved.odds[input.name]) {
+                    input.value = saved.odds[input.name];
+                }
+            });
+    
+            // 5. 還原 Legs 勾選
+            setTimeout(() => {
+                document.querySelectorAll('input[name="legs"]').forEach(cb => {
+                    if (saved.legs && saved.legs[cb.value] !== undefined) {
+                        cb.checked = saved.legs[cb.value];
+                    }
+                });
+                updateLegsState();
+            }, 100);
+    
+            alert(`✅ 已成功載入第 ${index + 1} 筆歷史記錄！`);
+            
+            // 可選：自動滾動到表單頂部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+    // ==================== 結束完整還原 ====================
 
         // Toggle all checkboxes in a column
         function toggleColumn(letter) {
