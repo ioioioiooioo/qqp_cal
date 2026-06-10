@@ -148,13 +148,20 @@
                 container.innerHTML += html;
             }
 
-            // 初始化所有關卡
+        // 強制初始化所有滑桿為正確的5匹
             setTimeout(() => {
                 document.querySelectorAll('.leg-card').forEach((leg, idx) => {
+                    const slider = leg.querySelector('.leg-horses');
+                    if (slider) {
+                        slider.value = 20;           // 內部滑桿位置對應5
+                        slider.dataset.horses = 5;
+                        document.getElementById(`horses-value-${idx+1}`).textContent = 5;
+                    }
                     const defaultBtn = leg.querySelector('[data-type="trio"]');
                     if (defaultBtn) selectPlay(defaultBtn, idx + 1);
                 });
-            }, 10);
+                calculateTotalBets();
+            }, 50);
             
             calculateTotalBets();
         }
@@ -265,46 +272,37 @@
             const legsNum = parseInt(document.getElementById('numLegs').value);
             const totalBets = document.getElementById('totalBets').textContent.replace(/,/g, '');
             let summary = `【注數計算結果】\n過關：${legsNum} 關\n\n`;
-    
-            // 收集每關詳細資訊
+        
             const legs = document.querySelectorAll('.leg-card');
             legs.forEach((leg, index) => {
                 const legNum = index + 1;
                 const typeBtn = leg.querySelector('.play-btn.active');
                 const type = typeBtn ? typeBtn.dataset.type : 'trio';
                 
-                // 正確取得目前馬匹數量
+                // 強制正確讀取馬匹數量
                 const slider = leg.querySelector('.leg-horses');
                 let horses = 5;
                 if (slider) {
-                    if (slider.dataset.horses) {
-                        horses = parseInt(slider.dataset.horses);
-                    } else {
-                        horses = parseInt(slider.value) || 5;
-                    }
+                    horses = parseInt(slider.dataset.horses) || parseInt(slider.value) || 5;
                 }
                 
                 const modeBtn = leg.querySelector('.mode-btn.active');
                 const mode = (modeBtn && modeBtn.dataset.mode === 'banker') ? '1膽拖' : '複式';
-    
+        
                 const fullName = {
-                    win: "獨贏", 
-                    place: "位置", 
-                    winplace: "獨贏 + 位置",
-                    trio: "單T", 
-                    quinella: "連贏", 
-                    placeq: "位置Q",
+                    win: "獨贏", place: "位置", winplace: "獨贏 + 位置",
+                    trio: "單T", quinella: "連贏", placeq: "位置Q",
                     quinella_placeq: "連贏 + 位置Q"
                 };
-    
+        
                 summary += `第${legNum}關 - ${fullName[type]} ${horses}匹${mode}\n`;
             });
-    
+        
             summary += `\n總注數：${parseInt(totalBets).toLocaleString('zh-HK')} 注\n`;
             summary += `總金額（$10/注）：HK$${(parseInt(totalBets)*10).toLocaleString('zh-HK')}\n\n`;
             summary += `理性投注，祝好運！\n`;
             summary += `數據只供參考，請自行驗證計算結果!`;
-    
+        
             navigator.clipboard.writeText(summary).then(() => {
                 alert('✅ 已複製詳細結果到剪貼簿！');
             });
