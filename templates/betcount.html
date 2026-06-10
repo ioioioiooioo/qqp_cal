@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>注數計算機 - 香港賽馬過關</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .leg-card { transition: all 0.2s; }
+        .leg-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>🏇 注數計算機</h1>
+            <a href="/" class="btn btn-outline-primary">← 返回派彩計算</a>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4>過關注數計算器</h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">過關關數</label>
+                        <select id="numLegs" class="form-select form-select-lg" onchange="generateLegs()">
+                            <option value="3">3 關過關</option>
+                            <option value="4" selected>4 關過關</option>
+                            <option value="5">5 關過關</option>
+                            <option value="6">6 關過關</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="legsContainer" class="row"></div>
+
+                <div class="mt-5 p-4 bg-light rounded-3 border">
+                    <h3 class="text-center mb-3">計算結果</h3>
+                    <div class="row text-center">
+                        <div class="col-md-6">
+                            <h4>總注數</h4>
+                            <h2 id="totalBets" class="text-danger">0</h2>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>總金額 (每注 $10)</h4>
+                            <h2 id="totalAmount" class="text-success">HK$0</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button onclick="copyBetSummary()" class="btn btn-lg btn-success">📋 複製投注摘要</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function generateLegs() {
+            const num = parseInt(document.getElementById('numLegs').value);
+            const container = document.getElementById('legsContainer');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= num; i++) {
+                const html = `
+                    <div class="col-lg-6 col-xl-4 mb-4 leg-card">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                第 ${i} 關
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">玩法</label>
+                                    <select class="form-select leg-type" onchange="calculateTotalBets()">
+                                        <option value="trio">單T (Trio)</option>
+                                        <option value="quinella">連贏 (Quinella)</option>
+                                        <option value="placeq">位置Q (Quinella Place)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">馬匹數量</label>
+                                    <input type="number" class="form-control leg-horses" value="5" min="3" max="14" onchange="calculateTotalBets()">
+                                </div>
+                                <div>
+                                    <label class="form-label">投注模式</label>
+                                    <select class="form-select leg-mode" onchange="calculateTotalBets()">
+                                        <option value="complex">複式</option>
+                                        <option value="banker" selected>1膽拖</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                container.innerHTML += html;
+            }
+            calculateTotalBets();
+        }
+
+        function calculateTotalBets() {
+            let total = 1;
+            const legs = document.querySelectorAll('.leg-card');
+
+            legs.forEach(leg => {
+                const type = leg.querySelector('.leg-type').value;
+                let horses = parseInt(leg.querySelector('.leg-horses').value) || 5;
+                const mode = leg.querySelector('.leg-mode').value;
+
+                let bets = 0;
+
+                if (mode === 'complex') {
+                    if (type === 'trio') bets = horses >= 3 ? Math.floor(horses*(horses-1)*(horses-2)/6) : 0;
+                    else if (type === 'quinella') bets = horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0;
+                    else bets = horses; // 位置Q 簡化
+                } else { // 1膽拖
+                    const feet = horses - 1;
+                    if (type === 'trio') bets = Math.floor(feet * (feet - 1) / 2);
+                    else if (type === 'quinella') bets = feet;
+                    else bets = feet;
+                }
+
+                total *= Math.max(bets, 1);
+            });
+
+            document.getElementById('totalBets').textContent = total.toLocaleString('zh-HK');
+            document.getElementById('totalAmount').textContent = `HK$${(total * 10).toLocaleString('zh-HK')}`;
+        }
+
+        function copyBetSummary() {
+            const legs = parseInt(document.getElementById('numLegs').value);
+            const totalBets = document.getElementById('totalBets').textContent.replace(/,/g, '');
+            const text = `【注數計算結果】\n過關：${legs} 關\n總注數：${totalBets} 注\n總金額（$10/注）：HK$${(parseInt(totalBets)*10).toLocaleString('zh-HK')}\n\n記得理性投注！`;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 已複製到剪貼簿！');
+            });
+        }
+
+        // 初始化
+        window.onload = generateLegs;
+    </script>
+</body>
+</html>
