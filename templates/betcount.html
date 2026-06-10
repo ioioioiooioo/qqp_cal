@@ -7,7 +7,10 @@
     <style>
         body { background-color: #f8f9fa; }
         .leg-card { transition: all 0.2s; }
-        .leg-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .leg-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .play-btn.active { background-color: #0d6efd !important; color: white !important; }
+        .mode-btn.active { background-color: #198754 !important; color: white !important; }
+        .slider-value { font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -68,63 +71,86 @@
                 const html = `
                     <div class="col-lg-6 col-xl-4 mb-4 leg-card">
                         <div class="card h-100">
-                            <div class="card-header bg-primary text-white">
-                                第 ${i} 關
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <span id="leg-title-${i}">第 ${i} 關</span>
                             </div>
                             <div class="card-body">
+                                <!-- 玩法按鈕 -->
                                 <div class="mb-3">
                                     <label class="form-label">玩法</label>
-                                    <select class="form-select leg-type" onchange="updateModeOptions(this); calculateTotalBets()">
-                                        <option value="win">獨贏 (Win)</option>
-                                        <option value="place">位置 (Place)</option>
-                                        <option value="winplace">獨贏 + 位置</option>
-                                        <option value="trio">單T (Trio)</option>
-                                        <option value="quinella">連贏 (Quinella)</option>
-                                        <option value="placeq">位置Q (Quinella Place)</option>
-                                        <option value="quinella_placeq">連贏 + 位置Q</option>
-                                    </select>
+                                    <div class="btn-group w-100 flex-wrap" role="group">
+                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="win" onclick="selectPlay(this, ${i})">W</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="place" onclick="selectPlay(this, ${i})">P</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="winplace" onclick="selectPlay(this, ${i})">W+P</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill active" data-type="trio" onclick="selectPlay(this, ${i})">T</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="quinella" onclick="selectPlay(this, ${i})">Q</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="placeq" onclick="selectPlay(this, ${i})">QP</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="quinella_placeq" onclick="selectPlay(this, ${i})">Q+QP</button>
+                                    </div>
                                 </div>
+
+                                <!-- 馬匹數量 Slider -->
                                 <div class="mb-3">
-                                    <label class="form-label">馬匹數量</label>
-                                    <input type="number" class="form-control leg-horses" value="5" min="2" max="14" onchange="calculateTotalBets()">
+                                    <label class="form-label">馬匹數量 <span id="horses-value-${i}" class="slider-value text-primary">5</span></label>
+                                    <input type="range" class="form-range leg-horses" id="horses-${i}" 
+                                           min="2" max="20" value="5" step="1" 
+                                           oninput="updateHorseValue(${i}); calculateTotalBets()">
                                 </div>
+
+                                <!-- 投注模式按鈕切換 -->
                                 <div class="mb-3">
                                     <label class="form-label">投注模式</label>
-                                    <select class="form-select leg-mode" onchange="calculateTotalBets()">
-                                        <!-- 選項由 JS 動態控制 -->
-                                    </select>
+                                    <div class="btn-group w-100" role="group">
+                                        <button type="button" class="btn btn-outline-success mode-btn flex-fill active" 
+                                                data-mode="complex" onclick="selectMode(this, ${i})">複式</button>
+                                        <button type="button" class="btn btn-outline-success mode-btn flex-fill" 
+                                                data-mode="banker" onclick="selectMode(this, ${i})">1膽拖</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>`;
                 container.innerHTML += html;
             }
-            // 初始化所有關的模式
-            document.querySelectorAll('.leg-type').forEach(select => {
-                updateModeOptions(select);
-            });
             calculateTotalBets();
         }
 
-        // 根據玩法動態更新模式選項
-        function updateModeOptions(typeSelect) {
-            const modeSelect = typeSelect.parentElement.parentElement.querySelector('.leg-mode');
-            const type = typeSelect.value;
-            
-            modeSelect.innerHTML = '';
-            
-            if (['win', 'place', 'winplace'].includes(type)) {
-                // 只能複式
-                modeSelect.innerHTML = '<option value="complex">複式</option>';
-                modeSelect.disabled = true;
-            } else {
-                // 可選擇複式或1膽拖
-                modeSelect.innerHTML = `
-                    <option value="complex">複式</option>
-                    <option value="banker" selected>1膽拖</option>
-                `;
-                modeSelect.disabled = false;
+        function selectPlay(btn, legNum) {
+            const group = btn.parentElement;
+            group.querySelectorAll('.play-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // 更新標題
+            const fullName = {
+                win: "獨贏", place: "位置", winplace: "獨贏 + 位置",
+                trio: "單T", quinella: "連贏", placeq: "位置Q",
+                quinella_placeq: "連贏 + 位置Q"
+            };
+            document.getElementById(`leg-title-${legNum}`).innerHTML = 
+                `第 ${legNum} 關 - <strong>${fullName[btn.dataset.type]}</strong>`;
+
+            // 自動切換模式（獨贏/位置/獨贏+位置 強制複式）
+            const modeGroup = btn.closest('.card-body').querySelector('.btn-group:last-child');
+            if (['win','place','winplace'].includes(btn.dataset.type)) {
+                modeGroup.querySelectorAll('.mode-btn').forEach(b => {
+                    if (b.dataset.mode === 'complex') b.classList.add('active');
+                    else b.classList.remove('active');
+                });
             }
+            calculateTotalBets();
+        }
+
+        function selectMode(btn, legNum) {
+            const group = btn.parentElement;
+            group.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            calculateTotalBets();
+        }
+
+        function updateHorseValue(legNum) {
+            const value = document.getElementById(`horses-${legNum}`).value;
+            document.getElementById(`horses-value-${legNum}`).textContent = value;
+            calculateTotalBets();
         }
 
         function calculateTotalBets() {
@@ -132,14 +158,15 @@
             const legs = document.querySelectorAll('.leg-card');
 
             legs.forEach(leg => {
-                const type = leg.querySelector('.leg-type').value;
-                let horses = parseInt(leg.querySelector('.leg-horses').value) || 5;
-                const mode = leg.querySelector('.leg-mode').value;
+                const typeBtn = leg.querySelector('.play-btn.active');
+                const type = typeBtn ? typeBtn.dataset.type : 'trio';
+                const horses = parseInt(leg.querySelector('.leg-horses').value) || 5;
+                const modeBtn = leg.querySelector('.mode-btn.active');
+                const mode = modeBtn ? modeBtn.dataset.mode : 'complex';
 
                 let bets = 0;
 
-                if (mode === 'complex' || ['win', 'place', 'winplace'].includes(type)) {
-                    // 複式
+                if (mode === 'complex' || ['win','place','winplace'].includes(type)) {
                     switch(type) {
                         case 'win': bets = horses; break;
                         case 'place': bets = horses; break;
@@ -150,7 +177,6 @@
                         case 'quinella_placeq': bets = (horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0) * 2; break;
                     }
                 } else {
-                    // 1膽拖
                     const feet = horses - 1;
                     switch(type) {
                         case 'trio': bets = feet >= 2 ? Math.floor(feet*(feet-1)/2) : 0; break;
@@ -159,7 +185,6 @@
                         case 'quinella_placeq': bets = feet * 2; break;
                     }
                 }
-
                 total *= Math.max(bets, 1);
             });
 
