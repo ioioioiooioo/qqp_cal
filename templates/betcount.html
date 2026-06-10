@@ -272,15 +272,28 @@
                 const legNum = index + 1;
                 const typeBtn = leg.querySelector('.play-btn.active');
                 const type = typeBtn ? typeBtn.dataset.type : 'trio';
-                const horses = leg.querySelector('.leg-horses').dataset.horses || 
-                              leg.querySelector('.leg-horses').value || 5;
+                
+                // 正確取得目前馬匹數量
+                const slider = leg.querySelector('.leg-horses');
+                let horses = 5;
+                if (slider) {
+                    if (slider.dataset.horses) {
+                        horses = parseInt(slider.dataset.horses);
+                    } else {
+                        horses = parseInt(slider.value) || 5;
+                    }
+                }
                 
                 const modeBtn = leg.querySelector('.mode-btn.active');
-                const mode = modeBtn && modeBtn.dataset.mode === 'banker' ? '1膽拖' : '複式';
+                const mode = (modeBtn && modeBtn.dataset.mode === 'banker') ? '1膽拖' : '複式';
     
                 const fullName = {
-                    win: "獨贏", place: "位置", winplace: "獨贏 + 位置",
-                    trio: "單T", quinella: "連贏", placeq: "位置Q",
+                    win: "獨贏", 
+                    place: "位置", 
+                    winplace: "獨贏 + 位置",
+                    trio: "單T", 
+                    quinella: "連贏", 
+                    placeq: "位置Q",
                     quinella_placeq: "連贏 + 位置Q"
                 };
     
