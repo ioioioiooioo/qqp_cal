@@ -229,7 +229,8 @@
             legs.forEach(leg => {
                 const typeBtn = leg.querySelector('.play-btn.active');
                 const type = typeBtn ? typeBtn.dataset.type : 'trio';
-                const horses = parseInt(leg.querySelector('.leg-horses').value) || 5;
+                const slider = leg.querySelector('.leg-horses');
+                const horses = parseInt(slider.dataset.horses) || 5;
                 const modeBtn = leg.querySelector('.mode-btn.active');
                 const mode = modeBtn ? modeBtn.dataset.mode : 'complex';
 
