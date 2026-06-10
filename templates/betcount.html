@@ -8,9 +8,32 @@
         body { background-color: #f8f9fa; }
         .leg-card { transition: all 0.2s; }
         .leg-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
-        .play-btn.active { background-color: #0d6efd !important; color: white !important; }
+        
+        .play-btn {
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 2px;
+        }
+        .play-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .slider-container {
+            position: relative;
+        }
+        .slider-ticks {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 8px;
+            font-size: 0.75rem;
+            color: #666;
+        }
         .mode-btn.active { background-color: #198754 !important; color: white !important; }
-        .slider-value { font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -78,26 +101,36 @@
                                 <!-- 玩法按鈕 -->
                                 <div class="mb-3">
                                     <label class="form-label">玩法</label>
-                                    <div class="btn-group w-100 flex-wrap" role="group">
-                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="win" onclick="selectPlay(this, ${i})">W</button>
-                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="place" onclick="selectPlay(this, ${i})">P</button>
-                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="winplace" onclick="selectPlay(this, ${i})">W+P</button>
-                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill active" data-type="trio" onclick="selectPlay(this, ${i})">T</button>
-                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="quinella" onclick="selectPlay(this, ${i})">Q</button>
-                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="placeq" onclick="selectPlay(this, ${i})">QP</button>
-                                        <button type="button" class="btn btn-outline-primary play-btn flex-fill" data-type="quinella_placeq" onclick="selectPlay(this, ${i})">Q+QP</button>
+                                    <div class="play-btn-group">
+                                        <button type="button" class="btn btn-outline-primary play-btn" data-type="win" onclick="selectPlay(this, ${i})">W</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn" data-type="place" onclick="selectPlay(this, ${i})">P</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn" data-type="winplace" onclick="selectPlay(this, ${i})">W+P</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn active" data-type="trio" onclick="selectPlay(this, ${i})">T</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn" data-type="quinella" onclick="selectPlay(this, ${i})">Q</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn" data-type="placeq" onclick="selectPlay(this, ${i})">QP</button>
+                                        <button type="button" class="btn btn-outline-primary play-btn" data-type="quinella_placeq" onclick="selectPlay(this, ${i})">Q+QP</button>
                                     </div>
                                 </div>
 
-                                <!-- 馬匹數量 Slider -->
+                                <!-- 馬匹數量 Slider + Ticks -->
                                 <div class="mb-3">
-                                    <label class="form-label">馬匹數量 <span id="horses-value-${i}" class="slider-value text-primary">5</span></label>
-                                    <input type="range" class="form-range leg-horses" id="horses-${i}" 
-                                           min="2" max="20" value="5" step="1" 
-                                           oninput="updateHorseValue(${i}); calculateTotalBets()">
+                                    <label class="form-label d-flex justify-content-between">
+                                        馬匹數量 
+                                        <span id="horses-value-${i}" class="slider-value text-primary">5</span>
+                                    </label>
+                                    <div class="slider-container">
+                                        <input type="range" class="form-range leg-horses" id="horses-${i}" 
+                                               min="1" max="20" value="5" step="1" 
+                                               oninput="updateHorseValue(${i}); calculateTotalBets()">
+                                        <div class="slider-ticks">
+                                            <span>1</span><span>2</span><span>3</span><span>4</span>
+                                            <span style="margin-left:15px">5</span>
+                                            <span>8</span><span>12</span><span>16</span><span>20</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <!-- 投注模式按鈕切換 -->
+                                <!-- 投注模式 -->
                                 <div class="mb-3">
                                     <label class="form-label">投注模式</label>
                                     <div class="btn-group w-100" role="group">
@@ -112,15 +145,19 @@
                     </div>`;
                 container.innerHTML += html;
             }
+            // 初始化
+            document.querySelectorAll('.leg-card').forEach((leg, idx) => {
+                const defaultBtn = leg.querySelector('[data-type="trio"]');
+                if (defaultBtn) selectPlay(defaultBtn, idx + 1);
+            });
             calculateTotalBets();
         }
 
         function selectPlay(btn, legNum) {
-            const group = btn.parentElement;
+            const group = btn.closest('.play-btn-group');
             group.querySelectorAll('.play-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            // 更新標題
             const fullName = {
                 win: "獨贏", place: "位置", winplace: "獨贏 + 位置",
                 trio: "單T", quinella: "連贏", placeq: "位置Q",
@@ -129,10 +166,10 @@
             document.getElementById(`leg-title-${legNum}`).innerHTML = 
                 `第 ${legNum} 關 - <strong>${fullName[btn.dataset.type]}</strong>`;
 
-            // 自動切換模式（獨贏/位置/獨贏+位置 強制複式）
-            const modeGroup = btn.closest('.card-body').querySelector('.btn-group:last-child');
+            // W, P, W+P 強制複式
+            const modeBtns = btn.closest('.card-body').querySelectorAll('.mode-btn');
             if (['win','place','winplace'].includes(btn.dataset.type)) {
-                modeGroup.querySelectorAll('.mode-btn').forEach(b => {
+                modeBtns.forEach(b => {
                     if (b.dataset.mode === 'complex') b.classList.add('active');
                     else b.classList.remove('active');
                 });
@@ -165,7 +202,6 @@
                 const mode = modeBtn ? modeBtn.dataset.mode : 'complex';
 
                 let bets = 0;
-
                 if (mode === 'complex' || ['win','place','winplace'].includes(type)) {
                     switch(type) {
                         case 'win': bets = horses; break;
@@ -199,7 +235,6 @@
             navigator.clipboard.writeText(text).then(() => alert('✅ 已複製到剪貼簿！'));
         }
 
-        // 初始化
         window.onload = generateLegs;
     </script>
 </body>
