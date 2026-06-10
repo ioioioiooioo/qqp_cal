@@ -112,7 +112,11 @@ def calculator():
 
         return render_template('index.html', items=items, result=result, stake=session['stake'], odds=session['odds'], max_k=max_k)
 
-    return render_template('index.html', items=items, stake=session['stake'], odds=session['odds'])
+    ## return render_template('index.html', items=items, stake=session['stake'], odds=session['odds'])
+
+@app.route('/betcount')
+def betcount():
+    return render_template('betcount.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
