@@ -19,7 +19,7 @@
 
         <div class="card shadow">
             <div class="card-header bg-success text-white">
-                <h4>過關注數計算器</h4>
+                <h4>過關注數計算器（支援多種 HKJC 玩法）</h4>
             </div>
             <div class="card-body">
                 <div class="row mb-4">
@@ -75,14 +75,18 @@
                                 <div class="mb-3">
                                     <label class="form-label">玩法</label>
                                     <select class="form-select leg-type" onchange="calculateTotalBets()">
+                                        <option value="win">獨贏 (Win)</option>
+                                        <option value="place">位置 (Place)</option>
+                                        <option value="winplace">獨贏 + 位置</option>
                                         <option value="trio">單T (Trio)</option>
                                         <option value="quinella">連贏 (Quinella)</option>
                                         <option value="placeq">位置Q (Quinella Place)</option>
+                                        <option value="quinella_placeq">連贏 + 位置Q</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">馬匹數量</label>
-                                    <input type="number" class="form-control leg-horses" value="5" min="3" max="14" onchange="calculateTotalBets()">
+                                    <input type="number" class="form-control leg-horses" value="5" min="2" max="14" onchange="calculateTotalBets()">
                                 </div>
                                 <div>
                                     <label class="form-label">投注模式</label>
@@ -111,14 +115,28 @@
                 let bets = 0;
 
                 if (mode === 'complex') {
-                    if (type === 'trio') bets = horses >= 3 ? Math.floor(horses*(horses-1)*(horses-2)/6) : 0;
-                    else if (type === 'quinella') bets = horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0;
-                    else bets = horses; // 位置Q 簡化
-                } else { // 1膽拖
+                    // 複式
+                    switch(type) {
+                        case 'win': bets = horses; break;
+                        case 'place': bets = horses; break;
+                        case 'winplace': bets = horses * 2; break;
+                        case 'trio': bets = horses >= 3 ? Math.floor(horses*(horses-1)*(horses-2)/6) : 0; break;
+                        case 'quinella': bets = horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0; break;
+                        case 'placeq': bets = horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0; break;
+                        case 'quinella_placeq': bets = (horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0) * 2; break;
+                    }
+                } else {
+                    // 1膽拖
                     const feet = horses - 1;
-                    if (type === 'trio') bets = Math.floor(feet * (feet - 1) / 2);
-                    else if (type === 'quinella') bets = feet;
-                    else bets = feet;
+                    switch(type) {
+                        case 'win': bets = 1; break;                    // 1膽拖 = 1注
+                        case 'place': bets = 1; break;
+                        case 'winplace': bets = 2; break;
+                        case 'trio': bets = feet >= 2 ? Math.floor(feet*(feet-1)/2) : 0; break;
+                        case 'quinella': bets = feet; break;
+                        case 'placeq': bets = feet; break;
+                        case 'quinella_placeq': bets = feet * 2; break;
+                    }
                 }
 
                 total *= Math.max(bets, 1);
@@ -129,12 +147,10 @@
         }
 
         function copyBetSummary() {
-            const legs = parseInt(document.getElementById('numLegs').value);
+            const legsNum = document.getElementById('numLegs').value;
             const totalBets = document.getElementById('totalBets').textContent.replace(/,/g, '');
-            const text = `【注數計算結果】\n過關：${legs} 關\n總注數：${totalBets} 注\n總金額（$10/注）：HK$${(parseInt(totalBets)*10).toLocaleString('zh-HK')}\n\n記得理性投注！`;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('✅ 已複製到剪貼簿！');
-            });
+            const text = `【注數計算結果】\n過關：${legsNum} 關\n總注數：${totalBets} 注\n總金額（$10/注）：HK$${(parseInt(totalBets)*10).toLocaleString('zh-HK')}\n\n理性投注，祝好運！`;
+            navigator.clipboard.writeText(text).then(() => alert('✅ 已複製到剪貼簿！'));
         }
 
         // 初始化
