@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <title>注數計算機</title>
+    <title>注數計算機 - 香港賽馬過關</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; }
@@ -28,15 +28,17 @@
 
         .slider-container {
             position: relative;
-            padding: 10px 0;
+            padding: 15px 0 25px 0;
         }
         .slider-ticks {
             display: flex;
             justify-content: space-between;
-            padding: 0 10px;
-            font-size: 0.8rem;
+            position: absolute;
+            width: 100%;
+            bottom: 0;
+            font-size: 0.75rem;
             color: #555;
-            margin-top: 4px;
+            padding: 0 8px;
         }
         .mode-btn.active { background-color: #198754 !important; color: white !important; }
         .mode-btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -58,6 +60,7 @@
                     <div class="col-md-3">
                         <label class="form-label fw-bold">過關關數</label>
                         <select id="numLegs" class="form-select form-select-lg" onchange="generateLegs()">
+                            <option value="2">2 關過關</option>
                             <option value="3">3 關過關</option>
                             <option value="4" selected>4 關過關</option>
                             <option value="5">5 關過關</option>
@@ -118,17 +121,17 @@
                                     </div>
                                 </div>
 
-                                <!-- 馬匹數量 Slider - 50 steps 非線性顯示 -->
+                                <!-- 馬匹數量 Slider -->
                                 <div class="mb-3">
                                     <label class="form-label d-flex justify-content-between">
                                         馬匹數量 <span id="horses-value-${i}" class="text-primary fw-bold">5</span>
                                     </label>
                                     <input type="range" class="form-range leg-horses" id="horses-${i}" 
-                                           min="0" max="49" value="20" step="1" 
+                                           min="1" max="20" value="5" step="1" 
                                            oninput="updateHorseValue(${i}); calculateTotalBets()">
                                     <div class="slider-ticks">
                                         <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-                                        <span>..</span><span>..</span><span>...</span><span>15</span>
+                                        <span>8</span><span>12</span><span>16</span><span>20</span>
                                     </div>
                                 </div>
 
@@ -148,12 +151,12 @@
                 container.innerHTML += html;
             }
 
-        // 強制初始化所有滑桿為正確的5匹
+            // 初始化
             setTimeout(() => {
                 document.querySelectorAll('.leg-card').forEach((leg, idx) => {
                     const slider = leg.querySelector('.leg-horses');
                     if (slider) {
-                        slider.value = 20;           // 內部滑桿位置對應5
+                        slider.value = 20;
                         slider.dataset.horses = 5;
                         document.getElementById(`horses-value-${idx+1}`).textContent = 5;
                     }
@@ -162,8 +165,6 @@
                 });
                 calculateTotalBets();
             }, 50);
-            
-            calculateTotalBets();
         }
 
         function selectPlay(btn, legNum) {
@@ -179,19 +180,14 @@
             document.getElementById(`leg-title-${legNum}`).innerHTML = 
                 `第 ${legNum} 關 - <strong>${fullName[btn.dataset.type]}</strong>`;
 
-            // 強制複式模式
             const modeBtns = btn.closest('.card-body').querySelectorAll('.mode-btn');
             const isForceComplex = ['win','place','winplace'].includes(btn.dataset.type);
             
             modeBtns.forEach(b => {
                 if (isForceComplex) {
-                    if (b.dataset.mode === 'complex') {
-                        b.classList.add('active');
-                        b.disabled = false;
-                    } else {
-                        b.classList.remove('active');
-                        b.disabled = true;
-                    }
+                    if (b.dataset.mode === 'complex') b.classList.add('active');
+                    else b.classList.remove('active');
+                    b.disabled = b.dataset.mode !== 'complex';
                 } else {
                     b.disabled = false;
                 }
@@ -208,24 +204,8 @@
         }
 
         function updateHorseValue(legNum) {
-            const slider = document.getElementById(`horses-${legNum}`);
-            const displayValue = document.getElementById(`horses-value-${legNum}`);
-            
-            let raw = parseInt(slider.value);
-            
-            // 非線性映射：前半段 (1-5) 較寬，後半段壓縮
-            let horses;
-            if (raw <= 24) {
-                horses = Math.floor(raw / 5) + 1;     // 0-4 → 1, 5-9 → 2, ..., 20-24 → 5
-            } else {
-                horses = 5 + Math.floor((raw - 24) / 2.5); // 之後加速
-                if (horses > 20) horses = 20;
-            }
-            
-            displayValue.textContent = horses;
-            // 把真實馬匹數存到一個 data 屬性，方便 calculateTotalBets 使用
-            slider.dataset.horses = horses;
-            
+            const value = document.getElementById(`horses-${legNum}`).value;
+            document.getElementById(`horses-value-${legNum}`).textContent = value;
             calculateTotalBets();
         }
 
@@ -236,8 +216,7 @@
             legs.forEach(leg => {
                 const typeBtn = leg.querySelector('.play-btn.active');
                 const type = typeBtn ? typeBtn.dataset.type : 'trio';
-                const slider = leg.querySelector('.leg-horses');
-                const horses = parseInt(slider.dataset.horses) || 5;
+                const horses = parseInt(leg.querySelector('.leg-horses').dataset.horses) || parseInt(leg.querySelector('.leg-horses').value) || 5;
                 const modeBtn = leg.querySelector('.mode-btn.active');
                 const mode = modeBtn ? modeBtn.dataset.mode : 'complex';
 
@@ -272,14 +251,13 @@
             const legsNum = parseInt(document.getElementById('numLegs').value);
             const totalBets = document.getElementById('totalBets').textContent.replace(/,/g, '');
             let summary = `【注數計算結果】\n過關：${legsNum} 關\n\n`;
-        
+
             const legs = document.querySelectorAll('.leg-card');
             legs.forEach((leg, index) => {
                 const legNum = index + 1;
                 const typeBtn = leg.querySelector('.play-btn.active');
                 const type = typeBtn ? typeBtn.dataset.type : 'trio';
                 
-                // 強制正確讀取馬匹數量
                 const slider = leg.querySelector('.leg-horses');
                 let horses = 5;
                 if (slider) {
@@ -288,21 +266,44 @@
                 
                 const modeBtn = leg.querySelector('.mode-btn.active');
                 const mode = (modeBtn && modeBtn.dataset.mode === 'banker') ? '1膽拖' : '複式';
-        
+
                 const fullName = {
                     win: "獨贏", place: "位置", winplace: "獨贏 + 位置",
                     trio: "單T", quinella: "連贏", placeq: "位置Q",
                     quinella_placeq: "連贏 + 位置Q"
                 };
-        
-                summary += `第${legNum}關 - ${fullName[type]} ${horses}匹${mode}\n`;
+
+                let legBets = 0;
+                const isComplex = mode === '複式' || ['win','place','winplace'].includes(type);
+                
+                if (isComplex) {
+                    switch(type) {
+                        case 'win': legBets = horses; break;
+                        case 'place': legBets = horses; break;
+                        case 'winplace': legBets = horses * 2; break;
+                        case 'trio': legBets = horses >= 3 ? Math.floor(horses*(horses-1)*(horses-2)/6) : 0; break;
+                        case 'quinella': legBets = horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0; break;
+                        case 'placeq': legBets = horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0; break;
+                        case 'quinella_placeq': legBets = (horses >= 2 ? Math.floor(horses*(horses-1)/2) : 0) * 2; break;
+                    }
+                } else {
+                    const feet = horses - 1;
+                    switch(type) {
+                        case 'trio': legBets = feet >= 2 ? Math.floor(feet*(feet-1)/2) : 0; break;
+                        case 'quinella': legBets = feet; break;
+                        case 'placeq': legBets = feet; break;
+                        case 'quinella_placeq': legBets = feet * 2; break;
+                    }
+                }
+
+                summary += `第${legNum}關 - ${fullName[type]} ${horses}匹${mode} ${legBets}注\n`;
             });
-        
+
             summary += `\n總注數：${parseInt(totalBets).toLocaleString('zh-HK')} 注\n`;
             summary += `總金額（$10/注）：HK$${(parseInt(totalBets)*10).toLocaleString('zh-HK')}\n\n`;
             summary += `理性投注，祝好運！\n`;
             summary += `數據只供參考，請自行驗證計算結果!`;
-        
+
             navigator.clipboard.writeText(summary).then(() => {
                 alert('✅ 已複製詳細結果到剪貼簿！');
             });
